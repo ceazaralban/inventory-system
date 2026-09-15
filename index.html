@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory System - Live Demo</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; }
+        .sidebar { width: 250px; min-height: 100vh; position: fixed; left: 0; top: 0; box-shadow: 0 0 10px rgba(0,0,0,0.1); z-index: 1000; transition: all 0.3s; }
+        .main-content { margin-left: 250px; min-height: 100vh; transition: all 0.3s; width: calc(100% - 250px); }
+        .nav-link { color: rgba(255,255,255,0.85); padding: 0.75rem 1.25rem; border-radius: 4px; margin: 2px 8px; cursor: pointer; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.15); }
+        .metric-card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.04); transition: transform 0.2s; }
+        .metric-card:hover { transform: translateY(-2px); }
+        .login-container { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; }
+        .login-card { background: white; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 400px; padding: 2.5rem; }
+        .app-view { display: none; }
+        .app-view.active { display: block; }
+        .badge-wholesale { background-color: #6f42c1; color: white; }
+        @media print {
+            .sidebar, .navbar, .btn, .no-print, .modal { display: none !important; }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+            .card { border: 1px solid #ddd !important; box-shadow: none !important; break-inside: avoid; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { margin-left: -250px; }
+            .sidebar.show { margin-left: 0; }
+            .main-content { margin-left: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <i class="bi bi-box-seam text-primary" style="font-size: 3rem;"></i>
+                <h3 class="mt-2 fw-bold text-dark">Inventory System</h3>
+                <span class="badge bg-success">Online Live Preview</span>
+            </div>
+            <div id="loginAlert" class="alert alert-danger d-none"></div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Username</label>
+                    <input type="text" id="loginUsername" class="form-control" value="admin" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" value="admin12345" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Sign In</button>
+            </form>
+            <div class="text-center mt-3 text-muted small">
+                Default: <strong>admin</strong> / <strong>admin12345</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="appScreen" style="display: none;">
+        <!-- SIDEBAR -->
+        <nav class="sidebar bg-dark" id="sidebar">
+            <div class="p-3 text-white border-bottom border-secondary d-flex align-items-center">
+                <i class="bi bi-box-seam fs-4 me-2 text-primary"></i>
+                <span class="fw-bold fs-5">Inventory System</span>
+            </div>
+            <div class="py-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" onclick="navigate('dashboard')">
+                            <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('products')">
+                            <i class="bi bi-box me-2"></i><span>Products</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('inventory')">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i><span>Inventory</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('sales')">
+                            <i class="bi bi-cart me-2"></i><span>Sales / POS</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('cash_recon')">
+                            <i class="bi bi-cash-coin me-2"></i><span>Cash Recon</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('reports')">
+                            <i class="bi bi-graph-up me-2"></i><span>Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="navigate('settings')">
+                            <i class="bi bi-gear me-2"></i><span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link text-danger" onclick="handleLogout()">
+                            <i class="bi bi-box-arrow-right me-2"></i><span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-content" id="mainContent">
+            <!-- NAVBAR -->
+            <nav class="navbar navbar-expand navbar-light bg-white border-bottom px-4 py-2 sticky-top shadow-sm">
+                <div class="container-fluid p-0">
+                    <button class="btn btn-outline-secondary d-md-none me-2" onclick="toggleSidebar()">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <span class="navbar-brand mb-0 h6 text-secondary" id="pageHeaderTitle">Dashboard</span>
+                    <div class="ms-auto d-flex align-items-center gap-3">
+                        <span class="badge bg-light text-dark border"><i class="bi bi-person-circle me-1"></i>Welcome, <strong id="currentUserBadge">admin</strong></span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="bi bi-power"></i></button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- FLASH ALERTS -->
+            <div class="container-fluid px-4 pt-3" id="flashContainer"></div>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="app-view active container-fluid px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold m-0">Dashboard Overview</h3>
+                    <div class="badge bg-primary px-3 py-2 fs-6">Status: All Systems Normal</div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-primary text-white p-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-white-50 text-uppercase fw-bold">Total Products</small>
+                                    <h2 class="fw-bold mt-2" id="kpi-total-products">0</h2>
+                                </div>
+                                <i class="bi bi-box fs-1 text-white-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-success text-white p-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-white-50 text-uppercase fw-bold">Total Inventory Value</small>
+                                    <h2 class="fw-bold mt-2" id="kpi-total-value">₱0.00</h2>
+                                </div>
+                                <i class="bi bi-cash-stack fs-1 text-white-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-info text-white p-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-white-50 text-uppercase fw-bold">Total Revenue</small>
+                                    <h2 class="fw-bold mt-2" id="kpi-total-revenue">₱0.00</h2>
+                                </div>
+                                <i class="bi bi-cart-check fs-1 text-white-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-danger text-white p-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <small class="text-white-50 text-uppercase fw-bold">Low Stock Items</small>
+                                    <h2 class="fw-bold mt-2" id="kpi-low-stock">0</h2>
+                                </div>
+                                <i class="bi bi-exclamation-triangle fs-1 text-white-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 fw-bold"><i class="bi bi-graph-up me-2 text-primary"></i>Revenue Trend</div>
+                            <div class="card-body">
+                                <canvas id="dashboardChart" height="110"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 fw-bold text-danger"><i class="bi bi-bell me-2"></i>Low Stock Warnings</div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="dashboardLowStockList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3 fw-bold"><i class="bi bi-receipt me-2 text-success"></i>Recent Sales Transactions</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th><th>Receipt #</th><th>Product</th><th>Qty / Wt</th><th>Total</th><th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardRecentSales"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: PRODUCTS -->
+            <div id="view-products" class="app-view container-fluid px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">Products Catalog</h3>
+                    <button class="btn btn-primary" onclick="openAddProductModal()"><i class="bi bi-plus-circle me-1"></i>Add New Product</button>
+                </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SKU</th><th>Product Name</th><th>Category</th><th>Unit</th>
+                                        <th>Cost Price</th><th>Retail Price</th><th>Wholesale Price</th>
+                                        <th>Stock Qty</th><th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: INVENTORY -->
+            <div id="view-inventory" class="app-view container-fluid px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">Inventory Management</h3>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success" onclick="openPurchaseModal()"><i class="bi bi-cart-plus me-1"></i>Record New Purchase</button>
+                        <button class="btn btn-warning" onclick="openAdjustStockModal()"><i class="bi bi-sliders me-1"></i>Adjust Stock</button>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-primary text-white p-3 text-center">
+                            <small class="text-white-50">Total Stock Qty</small>
+                            <h3 class="fw-bold my-1" id="inv-total-qty">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-info text-white p-3 text-center">
+                            <small class="text-white-50">Total Cost Value</small>
+                            <h3 class="fw-bold my-1" id="inv-total-cost">₱0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-warning text-white p-3 text-center">
+                            <small class="text-white-50">Total Retail Value</small>
+                            <h3 class="fw-bold my-1" id="inv-total-retail">₱0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card metric-card bg-danger text-white p-3 text-center">
+                            <small class="text-white-50">Low Stock Count</small>
+                            <h3 class="fw-bold my-1" id="inv-low-count">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3 fw-bold"><i class="bi bi-truck me-2 text-primary"></i>Purchase History & Stock In</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Date</th><th>Product</th><th>Qty In</th><th>Purchase Cost</th><th>Supplier</th><th>Notes</th></tr>
+                                </thead>
+                                <tbody id="purchasesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SALES / POS -->
+            <div id="view-sales" class="app-view container-fluid px-4 py-3">
+                <h3 class="fw-bold mb-3">Point of Sale (POS)</h3>
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white py-3 fw-bold">New Sale Order</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Pricing Tier</label>
+                                    <select id="posPriceType" class="form-select border-primary" onchange="updatePosPriceDisplay()">
+                                        <option value="retail">Retail Price (Regular)</option>
+                                        <option value="wholesale">Wholesale Price (Bulk)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Select Product</label>
+                                    <select id="posProductSelect" class="form-select" onchange="updatePosPriceDisplay()"></select>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold" id="posQtyLabel">Quantity (pcs)</label>
+                                        <input type="number" step="0.01" min="0.01" id="posQtyInput" class="form-control" value="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold">Unit Price</label>
+                                        <input type="text" id="posPriceDisplay" class="form-control bg-light" readonly value="₱0.00">
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-primary w-100 mb-3 fw-semibold" onclick="addToCart()"><i class="bi bi-plus-lg me-1"></i>Add Item to Cart</button>
+
+                                <hr>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Customer Name (Optional)</label>
+                                    <input type="text" id="posCustomerName" class="form-control" placeholder="Walk-in Customer">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Amount Paid</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" step="0.01" id="posAmountPaid" class="form-control" placeholder="0.00" oninput="calculateChange()">
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-light rounded mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Grand Total:</span>
+                                        <strong class="text-primary fs-5" id="posGrandTotal">₱0.00</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Change Due:</span>
+                                        <strong class="text-success fs-5" id="posChangeDue">₱0.00</strong>
+                                    </div>
+                                </div>
+                                <button class="btn btn-success w-100 py-2 fw-bold" onclick="completeSale()"><i class="bi bi-check2-circle me-1"></i>Complete Sale & Print Receipt</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white py-3 fw-bold">Cart Items</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr><th>Product</th><th>Price</th><th>Qty/Weight</th><th>Total</th><th>Action</th></tr>
+                                        </thead>
+                                        <tbody id="cartTableBody">
+                                            <tr><td colspan="5" class="text-center text-muted py-4">Cart is currently empty.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white py-3 fw-bold">Today's Transactions</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr><th>Receipt #</th><th>Customer</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+                                        </thead>
+                                        <tbody id="salesLogTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CASH RECON -->
+            <div id="view-cash_recon" class="app-view container-fluid px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">Cash Count Reconciliation</h3>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print Summary</button>
+                        <input type="date" id="reconDateInput" class="form-control" style="width: 170px;" onchange="loadReconciliation()">
+                    </div>
+                </div>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 fw-bold">Expected Cash (System Recorded)</div>
+                            <div class="card-body">
+                                <p class="mb-2">Total Sales Paid: <strong id="reconExpectedPaid">₱0.00</strong></p>
+                                <p class="mb-2">Total Change Given: <strong id="reconExpectedChange">₱0.00</strong></p>
+                                <hr>
+                                <h4>Expected Cash: <span class="text-success" id="reconExpectedTotal">₱0.00</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 fw-bold">Physical Cash Count</div>
+                            <div class="card-body">
+                                <form onsubmit="handleSaveReconciliation(event)">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Actual Counted Cash</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+                                            <input type="number" step="0.01" min="0" id="reconCountedInput" class="form-control" required oninput="updateReconDiff()">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Difference</label>
+                                        <h4 id="reconDiffDisplay" class="fw-bold text-muted">₱0.00</h4>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Notes / Remarks</label>
+                                        <input type="text" id="reconNotesInput" class="form-control" placeholder="E.g. End of day balance, petty cash retained">
+                                    </div>
+                                    <button type="submit" class="btn btn-success fw-semibold"><i class="bi bi-save me-1"></i>Save Reconciliation</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 fw-bold">Reconciliation History Log</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Date</th><th>Expected</th><th>Counted</th><th>Difference</th><th>Recorded By</th><th>Notes</th></tr>
+                                </thead>
+                                <tbody id="reconLogsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: REPORTS -->
+            <div id="view-reports" class="app-view container-fluid px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="fw-bold m-0">Reports & Analytics</h3>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print Summary</button>
+                        <button class="btn btn-primary" onclick="exportReportCSV()"><i class="bi bi-download me-1"></i>Export CSV</button>
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3 fw-bold">Product Performance & Gross Margins</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product Name</th><th>SKU</th><th>Cost Price</th><th>Selling Price</th>
+                                        <th>Qty Sold</th><th>Revenue</th><th>Cost Value</th><th>Gross Margin</th><th>Margin %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="app-view container-fluid px-4 py-3">
+                <h3 class="fw-bold mb-3">System Settings & Permissions</h3>
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white py-3 fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i>Page Access Permissions (Enable/Disable)</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table align-middle">
+                                        <thead class="table-light">
+                                            <tr><th>Page Name</th><th class="text-center">Manager Access</th><th class="text-center">Staff Access</th></tr>
+                                        </thead>
+                                        <tbody id="permissionsTableBody"></tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-primary mt-2" onclick="savePermissions()"><i class="bi bi-save me-1"></i>Save Page Permissions</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                <span class="fw-bold"><i class="bi bi-people me-2 text-success"></i>User Management</span>
+                                <button class="btn btn-sm btn-outline-success" onclick="openAddUserModal()"><i class="bi bi-person-plus"></i></button>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="usersListGroup"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD PRODUCT -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form onsubmit="handleSaveProduct(event)">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Add New Product</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">SKU</label>
+                            <input type="text" id="prodSku" class="form-control" placeholder="Auto-generated if empty">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" id="prodName" class="form-control" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Category</label>
+                                <input type="text" id="prodCategory" class="form-control" placeholder="E.g. Groceries">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Unit Type</label>
+                                <select id="prodUnitType" class="form-select">
+                                    <option value="piece">Piece (Pcs)</option>
+                                    <option value="kg">Kilogram (KG)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label">Cost Price</label>
+                                <input type="number" step="0.01" id="prodCost" class="form-control" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Retail Price</label>
+                                <input type="number" step="0.01" id="prodRetail" class="form-control" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Wholesale Price</label>
+                                <input type="number" step="0.01" id="prodWholesale" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Initial Stock</label>
+                                <input type="number" step="0.01" id="prodStock" class="form-control" value="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Reorder Level</label>
+                                <input type="number" step="0.01" id="prodReorder" class="form-control" value="10">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RECORD PURCHASE -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form onsubmit="handleSavePurchase(event)">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Record New Purchase</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Product</label>
+                            <select id="purProduct" class="form-select" required></select>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Quantity / Weight Received</label>
+                                <input type="number" step="0.01" min="0.01" id="purQty" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Purchase Cost (per unit)</label>
+                                <input type="number" step="0.01" min="0.01" id="purCost" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Supplier Name</label>
+                            <input type="text" id="purSupplier" class="form-control" placeholder="E.g. Manila Direct Suppliers">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <input type="text" id="purNotes" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Update Stock & Weighted Cost</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADJUST STOCK -->
+    <div class="modal fade" id="adjustStockModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form onsubmit="handleAdjustStock(event)">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Adjust Product Stock</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Product</label>
+                            <select id="adjProduct" class="form-select" required></select>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Action</label>
+                                <select id="adjAction" class="form-select">
+                                    <option value="add">Add (+)</option>
+                                    <option value="subtract">Deduct (-)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Quantity / KG</label>
+                                <input type="number" step="0.01" min="0.01" id="adjQty" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reason</label>
+                            <input type="text" id="adjReason" class="form-control" placeholder="E.g. Inventory count discrepancy, damaged item" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Apply Stock Adjustment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD USER -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form onsubmit="handleSaveUser(event)">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Create New User</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="newUsername" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="newEmail" class="form-control" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Password</label>
+                                <input type="password" id="newPassword" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Role</label>
+                                <select id="newRole" class="form-select">
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECEIPT MODAL FOR PRINTING -->
+    <div class="modal fade" id="receiptModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4" id="receiptPrintArea">
+                    <h5 class="fw-bold mb-1">INVENTORY SYSTEM</h5>
+                    <small class="text-muted d-block mb-3">Official Sales Receipt</small>
+                    <div class="text-start border-top border-bottom py-2 my-2 small">
+                        <div>Receipt: <strong id="recReceiptNo"></strong></div>
+                        <div>Date: <span id="recDate"></span></div>
+                        <div>Customer: <span id="recCustomer"></span></div>
+                    </div>
+                    <table class="table table-sm text-start table-borderless small mb-2">
+                        <tbody id="recItems"></tbody>
+                    </table>
+                    <div class="border-top pt-2 text-end fw-bold fs-6">
+                        <div>Total: <span id="recTotal" class="text-primary"></span></div>
+                        <div>Paid: <span id="recPaid"></span></div>
+                        <div>Change: <span id="recChange" class="text-success"></span></div>
+                    </div>
+                    <small class="text-muted d-block mt-3">Thank you for your business!</small>
+                </div>
+                <div class="modal-footer no-print">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // INITIAL SAMPLE DATA
+        const INITIAL_PRODUCTS = [
+            { id: 1, sku: 'SKU-RICE001', name: 'Jasmine Rice 25kg Sack', category: 'Grains', unit_type: 'piece', cost_price: 1000.00, sale_price: 1250.00, wholesale_price: 1150.00, stock_qty: 20.00, reorder_level: 5 },
+            { id: 2, sku: 'SKU-PORK002', name: 'Fresh Pork Belly', category: 'Meat', unit_type: 'kg', cost_price: 280.00, sale_price: 360.00, wholesale_price: 320.00, stock_qty: 50.50, reorder_level: 10 },
+            { id: 3, sku: 'SKU-OIL003', name: 'Cooking Oil 1L Bottle', category: 'Groceries', unit_type: 'piece', cost_price: 65.00, sale_price: 85.00, wholesale_price: 75.00, stock_qty: 40.00, reorder_level: 10 },
+            { id: 4, sku: 'SKU-CHIK004', name: 'Fresh Whole Chicken', category: 'Poultry', unit_type: 'kg', cost_price: 160.00, sale_price: 210.00, wholesale_price: 190.00, stock_qty: 35.00, reorder_level: 8 },
+            { id: 5, sku: 'SKU-SUG005', name: 'Refined White Sugar 1kg', category: 'Groceries', unit_type: 'piece', cost_price: 70.00, sale_price: 90.00, wholesale_price: 82.00, stock_qty: 4.00, reorder_level: 10 }
+        ];
+
+        const INITIAL_USERS = [
+            { id: 1, username: 'admin', email: 'admin@example.com', role: 'admin', is_active: 1 },
+            { id: 2, username: 'manager1', email: 'manager@example.com', role: 'manager', is_active: 1 },
+            { id: 3, username: 'cashier1', email: 'staff@example.com', role: 'staff', is_active: 1 }
+        ];
+
+        const INITIAL_PERMISSIONS = {
+            manager: { dashboard: 1, products: 1, inventory: 1, sales: 1, cash_recon: 1, reports: 1, settings: 0 },
+            staff: { dashboard: 1, products: 0, inventory: 1, sales: 1, cash_recon: 1, reports: 0, settings: 0 }
+        };
+
+        // LOAD FROM LOCAL STORAGE OR INITIALIZE
+        function getStorage(key, fallback) {
+            const data = localStorage.getItem('inv_sys_' + key);
+            return data ? JSON.parse(data) : fallback;
+        }
+        function setStorage(key, val) {
+            localStorage.setItem('inv_sys_' + key, JSON.stringify(val));
+        }
+
+        let products = getStorage('products', INITIAL_PRODUCTS);
+        let purchases = getStorage('purchases', [
+            { date: '2026-09-15 08:30', product_id: 1, product_name: 'Jasmine Rice 25kg Sack', qty: 20, cost: 1000.00, supplier: 'Rice Mills Ltd', notes: 'Initial inventory shipment' },
+            { date: '2026-09-15 08:45', product_id: 2, product_name: 'Fresh Pork Belly', qty: 50.5, cost: 280.00, supplier: 'Local Farm', notes: 'Fresh delivery' }
+        ]);
+        let sales = getStorage('sales', [
+            { id: 1, receipt_no: 'R-20260915-001', date: '2026-09-15 09:30', product_id: 3, product_name: 'Cooking Oil 1L Bottle', qty: 2, price: 85.00, total: 170.00, paid: 200.00, change: 30.00, customer: 'Walk-in', is_void: 0 }
+        ]);
+        let reconLogs = getStorage('recon_logs', []);
+        let users = getStorage('users', INITIAL_USERS);
+        let permissions = getStorage('permissions', INITIAL_PERMISSIONS);
+        let cart = [];
+        let dashboardChart = null;
+
+        // AUTHENTICATION
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const user = users.find(x => x.username === u && x.is_active === 1);
+            if (user && p === 'admin12345') {
+                sessionStorage.setItem('inv_current_user', JSON.stringify(user));
+                initApp();
+            } else {
+                const alert = document.getElementById('loginAlert');
+                alert.textContent = 'Invalid credentials or user account is disabled!';
+                alert.classList.remove('d-none');
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('inv_current_user');
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // NAVIGATION
+        function navigate(viewName) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            
+            const target = document.getElementById('view-' + viewName);
+            if (target) target.classList.add('active');
+            
+            const activeLink = document.querySelector(`.sidebar .nav-link[onclick="navigate('${viewName}')"]`);
+            if (activeLink) activeLink.classList.add('active');
+
+            document.getElementById('pageHeaderTitle').textContent = viewName.toUpperCase().replace('_', ' ');
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+
+            renderView(viewName);
+        }
+
+        function renderView(viewName) {
+            if (viewName === 'dashboard') renderDashboard();
+            if (viewName === 'products') renderProducts();
+            if (viewName === 'inventory') renderInventory();
+            if (viewName === 'sales') renderSales();
+            if (viewName === 'cash_recon') loadReconciliation();
+            if (viewName === 'reports') renderReports();
+            if (viewName === 'settings') renderSettings();
+        }
+
+        // FLASH MESSAGES
+        function showFlash(msg, type = 'success') {
+            const container = document.getElementById('flashContainer');
+            container.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${msg}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            setTimeout(() => { container.innerHTML = ''; }, 4000);
+        }
+
+        // DASHBOARD
+        function renderDashboard() {
+            document.getElementById('kpi-total-products').textContent = products.length;
+            const totalVal = products.reduce((acc, p) => acc + (p.stock_qty * p.cost_price), 0);
+            document.getElementById('kpi-total-value').textContent = '₱' + totalVal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const totalRev = sales.filter(s => !s.is_void).reduce((acc, s) => acc + s.total, 0);
+            document.getElementById('kpi-total-revenue').textContent = '₱' + totalRev.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const lowStockItems = products.filter(p => p.stock_qty <= p.reorder_level);
+            document.getElementById('kpi-low-stock').textContent = lowStockItems.length;
+
+            // Low stock list
+            const lowList = document.getElementById('dashboardLowStockList');
+            if (lowStockItems.length === 0) {
+                lowList.innerHTML = '<li class="list-group-item text-muted text-center py-3">All product stock levels healthy!</li>';
+            } else {
+                lowList.innerHTML = lowStockItems.map(p => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><strong>${p.name}</strong><br><small class="text-muted">SKU: ${p.sku}</small></div>
+                        <span class="badge bg-danger rounded-pill">${p.stock_qty} ${p.unit_type === 'kg' ? 'kg' : 'pcs'}</span>
+                    </li>
+                `).join('');
+            }
+
+            // Recent sales
+            const recentSales = sales.slice(-5).reverse();
+            document.getElementById('dashboardRecentSales').innerHTML = recentSales.length ? recentSales.map(s => `
+                <tr>
+                    <td>${s.date}</td>
+                    <td><code>${s.receipt_no}</code></td>
+                    <td>${s.product_name}</td>
+                    <td>${s.qty}</td>
+                    <td>₱${s.total.toFixed(2)}</td>
+                    <td>${s.is_void ? '<span class="badge bg-danger">Voided</span>' : '<span class="badge bg-success">Completed</span>'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">No sales yet</td></tr>';
+
+            // Chart
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            if (dashboardChart) dashboardChart.destroy();
+            dashboardChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'],
+                    datasets: [{
+                        label: 'Sales Revenue (₱)',
+                        data: [2500, 3200, 1800, 4200, 3100, 4800, totalRev],
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // PRODUCTS
+        function renderProducts() {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = products.map(p => `
+                <tr>
+                    <td><code>${p.sku}</code></td>
+                    <td><strong>${p.name}</strong></td>
+                    <td><span class="badge bg-secondary">${p.category || 'General'}</span></td>
+                    <td><span class="badge ${p.unit_type === 'kg' ? 'bg-info' : 'bg-light text-dark'}">${p.unit_type.toUpperCase()}</span></td>
+                    <td>₱${parseFloat(p.cost_price).toFixed(2)}</td>
+                    <td>₱${parseFloat(p.sale_price).toFixed(2)}</td>
+                    <td><span class="badge badge-wholesale">₱${parseFloat(p.wholesale_price).toFixed(2)}</span></td>
+                    <td><strong class="${p.stock_qty <= p.reorder_level ? 'text-danger' : 'text-success'}">${p.stock_qty}</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id})"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddProductModal() {
+            new bootstrap.Modal(document.getElementById('addProductModal')).show();
+        }
+
+        function handleSaveProduct(e) {
+            e.preventDefault();
+            const newProd = {
+                id: Date.now(),
+                sku: document.getElementById('prodSku').value.trim() || 'SKU-' + Math.random().toString(36).substring(2,8).toUpperCase(),
+                name: document.getElementById('prodName').value.trim(),
+                category: document.getElementById('prodCategory').value.trim() || 'General',
+                unit_type: document.getElementById('prodUnitType').value,
+                cost_price: parseFloat(document.getElementById('prodCost').value) || 0,
+                sale_price: parseFloat(document.getElementById('prodRetail').value) || 0,
+                wholesale_price: parseFloat(document.getElementById('prodWholesale').value) || parseFloat(document.getElementById('prodRetail').value),
+                stock_qty: parseFloat(document.getElementById('prodStock').value) || 0,
+                reorder_level: parseFloat(document.getElementById('prodReorder').value) || 10
+            };
+            products.push(newProd);
+            setStorage('products', products);
+            bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+            renderProducts();
+            showFlash('Product "' + newProd.name + '" added successfully!');
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                products = products.filter(p => p.id !== id);
+                setStorage('products', products);
+                renderProducts();
+                showFlash('Product deleted.');
+            }
+        }
+
+        // INVENTORY
+        function renderInventory() {
+            const totalQty = products.reduce((acc, p) => acc + p.stock_qty, 0);
+            const totalCost = products.reduce((acc, p) => acc + (p.stock_qty * p.cost_price), 0);
+            const totalRetail = products.reduce((acc, p) => acc + (p.stock_qty * p.sale_price), 0);
+            const lowCount = products.filter(p => p.stock_qty <= p.reorder_level).length;
+
+            document.getElementById('inv-total-qty').textContent = totalQty.toFixed(2);
+            document.getElementById('inv-total-cost').textContent = '₱' + totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('inv-total-retail').textContent = '₱' + totalRetail.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('inv-low-count').textContent = lowCount;
+
+            const purBody = document.getElementById('purchasesTableBody');
+            purBody.innerHTML = purchases.length ? purchases.slice().reverse().map(p => `
+                <tr>
+                    <td>${p.date}</td>
+                    <td><strong>${p.product_name}</strong></td>
+                    <td><span class="badge bg-success">+${p.qty}</span></td>
+                    <td>₱${parseFloat(p.cost).toFixed(2)}</td>
+                    <td>${p.supplier || 'N/A'}</td>
+                    <td>${p.notes || '-'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">No purchase logs.</td></tr>';
+        }
+
+        function openPurchaseModal() {
+            const select = document.getElementById('purProduct');
+            select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (Current Cost: ₱${p.cost_price.toFixed(2)})</option>`).join('');
+            new bootstrap.Modal(document.getElementById('purchaseModal')).show();
+        }
+
+        function handleSavePurchase(e) {
+            e.preventDefault();
+            const prodId = parseInt(document.getElementById('purProduct').value);
+            const qty = parseFloat(document.getElementById('purQty').value);
+            const newCost = parseFloat(document.getElementById('purCost').value);
+            const supplier = document.getElementById('purSupplier').value.trim();
+            const notes = document.getElementById('purNotes').value.trim();
+
+            const p = products.find(x => x.id === prodId);
+            if (!p) return;
+
+            // Weighted average cost calculation
+            const currentStock = p.stock_qty;
+            const currentCost = p.cost_price;
+            const den = currentStock + qty;
+            const weightedCost = den > 0 ? ((currentStock * currentCost) + (qty * newCost)) / den : newCost;
+
+            p.stock_qty += qty;
+            p.cost_price = weightedCost;
+
+            purchases.push({
+                date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                product_id: p.id,
+                product_name: p.name,
+                qty: qty,
+                cost: newCost,
+                supplier: supplier,
+                notes: notes
+            });
+
+            setStorage('products', products);
+            setStorage('purchases', purchases);
+            bootstrap.Modal.getInstance(document.getElementById('purchaseModal')).hide();
+            renderInventory();
+            showFlash(`Purchase recorded! Stock updated and new weighted cost is ₱${weightedCost.toFixed(2)}`);
+        }
+
+        function openAdjustStockModal() {
+            const select = document.getElementById('adjProduct');
+            select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock_qty})</option>`).join('');
+            new bootstrap.Modal(document.getElementById('adjustStockModal')).show();
+        }
+
+        function handleAdjustStock(e) {
+            e.preventDefault();
+            const prodId = parseInt(document.getElementById('adjProduct').value);
+            const act = document.getElementById('adjAction').value;
+            const qty = parseFloat(document.getElementById('adjQty').value);
+            const reason = document.getElementById('adjReason').value.trim();
+
+            const p = products.find(x => x.id === prodId);
+            if (!p) return;
+
+            if (act === 'add') {
+                p.stock_qty += qty;
+            } else {
+                p.stock_qty = Math.max(0, p.stock_qty - qty);
+            }
+
+            setStorage('products', products);
+            bootstrap.Modal.getInstance(document.getElementById('adjustStockModal')).hide();
+            renderInventory();
+            showFlash(`Stock adjusted for ${p.name}. Reason: ${reason}`);
+        }
+
+        // SALES / POS
+        function renderSales() {
+            const select = document.getElementById('posProductSelect');
+            select.innerHTML = products.map(p => `
+                <option value="${p.id}" data-unit="${p.unit_type}" data-retail="${p.sale_price}" data-wholesale="${p.wholesale_price}" data-stock="${p.stock_qty}">
+                    ${p.name} (Stock: ${p.stock_qty} ${p.unit_type === 'kg' ? 'kg' : 'pcs'})
+                </option>
+            `).join('');
+            updatePosPriceDisplay();
+            renderCart();
+            renderSalesLogs();
+        }
+
+        function updatePosPriceDisplay() {
+            const select = document.getElementById('posProductSelect');
+            if (!select.options.length) return;
+            const opt = select.options[select.selectedIndex];
+            const type = document.getElementById('posPriceType').value;
+            const price = type === 'wholesale' ? parseFloat(opt.getAttribute('data-wholesale')) : parseFloat(opt.getAttribute('data-retail'));
+            document.getElementById('posPriceDisplay').value = '₱' + price.toFixed(2);
+            document.getElementById('posQtyLabel').textContent = opt.getAttribute('data-unit') === 'kg' ? 'Weight (KG)' : 'Quantity (pcs)';
+        }
+
+        function addToCart() {
+            const select = document.getElementById('posProductSelect');
+            if (!select.options.length) return;
+            const opt = select.options[select.selectedIndex];
+            const p = products.find(x => x.id === parseInt(opt.value));
+            const type = document.getElementById('posPriceType').value;
+            const price = type === 'wholesale' ? p.wholesale_price : p.sale_price;
+            const qty = parseFloat(document.getElementById('posQtyInput').value) || 1;
+
+            if (qty > p.stock_qty) {
+                alert(`Insufficient stock! Available: ${p.stock_qty}`);
+                return;
+            }
+
+            cart.push({
+                product_id: p.id,
+                name: p.name,
+                unit: p.unit_type,
+                price: price,
+                qty: qty,
+                total: price * qty
+            });
+
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartTableBody');
+            if (!cart.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Cart is currently empty.</td></tr>';
+                document.getElementById('posGrandTotal').textContent = '₱0.00';
+                calculateChange();
+                return;
+            }
+
+            tbody.innerHTML = cart.map((item, idx) => `
+                <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>₱${item.price.toFixed(2)}</td>
+                    <td>${item.qty} ${item.unit === 'kg' ? 'kg' : 'pcs'}</td>
+                    <td><strong>₱${item.total.toFixed(2)}</strong></td>
+                    <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${idx})"><i class="bi bi-x"></i></button></td>
+                </tr>
+            `).join('');
+
+            const grand = cart.reduce((acc, i) => acc + i.total, 0);
+            document.getElementById('posGrandTotal').textContent = '₱' + grand.toFixed(2);
+            calculateChange();
+        }
+
+        function removeFromCart(idx) {
+            cart.splice(idx, 1);
+            renderCart();
+        }
+
+        function calculateChange() {
+            const grand = cart.reduce((acc, i) => acc + i.total, 0);
+            const paid = parseFloat(document.getElementById('posAmountPaid').value) || 0;
+            const change = Math.max(0, paid - grand);
+            document.getElementById('posChangeDue').textContent = '₱' + change.toFixed(2);
+        }
+
+        function completeSale() {
+            if (!cart.length) {
+                alert('Cart is empty!');
+                return;
+            }
+            const grand = cart.reduce((acc, i) => acc + i.total, 0);
+            const paid = parseFloat(document.getElementById('posAmountPaid').value) || 0;
+            if (paid < grand) {
+                alert(`Insufficient payment! Total: ₱${grand.toFixed(2)}, Paid: ₱${paid.toFixed(2)}`);
+                return;
+            }
+
+            const recNo = 'R-' + Date.now().toString().slice(-8);
+            const cust = document.getElementById('posCustomerName').value.trim() || 'Walk-in Customer';
+
+            // Deduct stock
+            cart.forEach(item => {
+                const p = products.find(x => x.id === item.product_id);
+                if (p) p.stock_qty = Math.max(0, p.stock_qty - item.qty);
+                sales.push({
+                    id: Date.now() + Math.random(),
+                    receipt_no: recNo,
+                    date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                    product_id: item.product_id,
+                    product_name: item.name,
+                    qty: item.qty,
+                    price: item.price,
+                    total: item.total,
+                    paid: paid,
+                    change: paid - grand,
+                    customer: cust,
+                    is_void: 0
+                });
+            });
+
+            // Open Receipt Modal
+            document.getElementById('recReceiptNo').textContent = recNo;
+            document.getElementById('recDate').textContent = new Date().toLocaleString();
+            document.getElementById('recCustomer').textContent = cust;
+            document.getElementById('recItems').innerHTML = cart.map(i => `
+                <tr><td>${i.name} (${i.qty})</td><td class="text-end">₱${i.total.toFixed(2)}</td></tr>
+            `).join('');
+            document.getElementById('recTotal').textContent = '₱' + grand.toFixed(2);
+            document.getElementById('recPaid').textContent = '₱' + paid.toFixed(2);
+            document.getElementById('recChange').textContent = '₱' + (paid - grand).toFixed(2);
+
+            new bootstrap.Modal(document.getElementById('receiptModal')).show();
+
+            cart = [];
+            document.getElementById('posAmountPaid').value = '';
+            setStorage('products', products);
+            setStorage('sales', sales);
+            renderCart();
+            renderSalesLogs();
+            showFlash('Sale completed successfully! Receipt generated.');
+        }
+
+        function renderSalesLogs() {
+            const tbody = document.getElementById('salesLogTableBody');
+            tbody.innerHTML = sales.slice(-10).reverse().map(s => `
+                <tr>
+                    <td><code>${s.receipt_no}</code></td>
+                    <td>${s.customer}</td>
+                    <td>₱${s.total.toFixed(2)}</td>
+                    <td>${s.is_void ? '<span class="badge bg-danger">Voided</span>' : '<span class="badge bg-success">Active</span>'}</td>
+                    <td>
+                        ${!s.is_void ? `<button class="btn btn-sm btn-outline-danger" onclick="voidSale('${s.receipt_no}')">Void</button>` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function voidSale(receiptNo) {
+            if (confirm(`Are you sure you want to void receipt ${receiptNo}? Stock will be restored.`)) {
+                sales.forEach(s => {
+                    if (s.receipt_no === receiptNo && !s.is_void) {
+                        s.is_void = 1;
+                        const p = products.find(x => x.id === s.product_id);
+                        if (p) p.stock_qty += s.qty;
+                    }
+                });
+                setStorage('products', products);
+                setStorage('sales', sales);
+                renderSalesLogs();
+                showFlash(`Receipt ${receiptNo} voided. Stock restored.`);
+            }
+        }
+
+        // CASH RECONCILIATION
+        function loadReconciliation() {
+            const today = new Date().toISOString().slice(0, 10);
+            const dateInput = document.getElementById('reconDateInput');
+            if (!dateInput.value) dateInput.value = today;
+            const date = dateInput.value;
+
+            const daySales = sales.filter(s => s.date.startsWith(date) && !s.is_void);
+            const totalPaid = daySales.reduce((acc, s) => acc + s.paid, 0);
+            const totalChange = daySales.reduce((acc, s) => acc + s.change, 0);
+            const expected = Math.max(0, totalPaid - totalChange);
+
+            document.getElementById('reconExpectedPaid').textContent = '₱' + totalPaid.toFixed(2);
+            document.getElementById('reconExpectedChange').textContent = '₱' + totalChange.toFixed(2);
+            document.getElementById('reconExpectedTotal').textContent = '₱' + expected.toFixed(2);
+
+            updateReconDiff();
+            renderReconLogs();
+        }
+
+        function updateReconDiff() {
+            const expText = document.getElementById('reconExpectedTotal').textContent.replace('₱', '').replace(',', '');
+            const expected = parseFloat(expText) || 0;
+            const counted = parseFloat(document.getElementById('reconCountedInput').value) || 0;
+            const diff = counted - expected;
+
+            const diffEl = document.getElementById('reconDiffDisplay');
+            diffEl.textContent = (diff >= 0 ? '+₱' : '-₱') + Math.abs(diff).toFixed(2);
+            diffEl.className = 'fw-bold ' + (diff === 0 ? 'text-success' : (diff > 0 ? 'text-primary' : 'text-danger'));
+        }
+
+        function handleSaveReconciliation(e) {
+            e.preventDefault();
+            const date = document.getElementById('reconDateInput').value;
+            const expText = document.getElementById('reconExpectedTotal').textContent.replace('₱', '').replace(',', '');
+            const expected = parseFloat(expText) || 0;
+            const counted = parseFloat(document.getElementById('reconCountedInput').value) || 0;
+            const notes = document.getElementById('reconNotesInput').value.trim();
+            const diff = counted - expected;
+
+            reconLogs.push({
+                date: date,
+                expected: expected,
+                counted: counted,
+                difference: diff,
+                recorded_by: 'admin',
+                notes: notes
+            });
+
+            setStorage('recon_logs', reconLogs);
+            renderReconLogs();
+            showFlash('Cash reconciliation saved successfully!');
+        }
+
+        function renderReconLogs() {
+            const tbody = document.getElementById('reconLogsTableBody');
+            tbody.innerHTML = reconLogs.length ? reconLogs.slice().reverse().map(l => `
+                <tr>
+                    <td>${l.date}</td>
+                    <td>₱${l.expected.toFixed(2)}</td>
+                    <td>₱${l.counted.toFixed(2)}</td>
+                    <td><strong class="${l.difference >= 0 ? 'text-success' : 'text-danger'}">₱${l.difference.toFixed(2)}</strong></td>
+                    <td>${l.recorded_by}</td>
+                    <td>${l.notes || '-'}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">No reconciliation records for this date.</td></tr>';
+        }
+
+        // REPORTS
+        function renderReports() {
+            const tbody = document.getElementById('reportsTableBody');
+            tbody.innerHTML = products.map(p => {
+                const prodSales = sales.filter(s => s.product_id === p.id && !s.is_void);
+                const qtySold = prodSales.reduce((acc, s) => acc + s.qty, 0);
+                const revenue = prodSales.reduce((acc, s) => acc + s.total, 0);
+                const costVal = qtySold * p.cost_price;
+                const margin = revenue - costVal;
+                const marginPct = revenue > 0 ? ((margin / revenue) * 100).toFixed(1) : '0.0';
+
+                return `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td><code>${p.sku}</code></td>
+                        <td>₱${p.cost_price.toFixed(2)}</td>
+                        <td>₱${p.sale_price.toFixed(2)}</td>
+                        <td><strong>${qtySold}</strong></td>
+                        <td>₱${revenue.toFixed(2)}</td>
+                        <td>₱${costVal.toFixed(2)}</td>
+                        <td class="${margin >= 0 ? 'text-success' : 'text-danger'}">₱${margin.toFixed(2)}</td>
+                        <td><span class="badge ${marginPct > 20 ? 'bg-success' : 'bg-warning text-dark'}">${marginPct}%</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportReportCSV() {
+            let csv = "Product,SKU,Cost Price,Sale Price,Qty Sold,Revenue,Cost Value,Gross Margin,Margin %\n";
+            products.forEach(p => {
+                const prodSales = sales.filter(s => s.product_id === p.id && !s.is_void);
+                const qtySold = prodSales.reduce((acc, s) => acc + s.qty, 0);
+                const revenue = prodSales.reduce((acc, s) => acc + s.total, 0);
+                const costVal = qtySold * p.cost_price;
+                const margin = revenue - costVal;
+                const marginPct = revenue > 0 ? ((margin / revenue) * 100).toFixed(1) : '0.0';
+                csv += `"${p.name}","${p.sku}",${p.cost_price},${p.sale_price},${qtySold},${revenue},${costVal},${margin},${marginPct}%\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory_performance_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+
+        // SETTINGS & PERMISSIONS
+        function renderSettings() {
+            const pages = [
+                { id: 'dashboard', name: 'Dashboard' },
+                { id: 'products', name: 'Products Catalog' },
+                { id: 'inventory', name: 'Inventory & Purchases' },
+                { id: 'sales', name: 'Sales / Point of Sale' },
+                { id: 'cash_recon', name: 'Cash Reconciliation' },
+                { id: 'reports', name: 'Reports & Analytics' },
+                { id: 'settings', name: 'System Settings' }
+            ];
+
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = pages.map(p => `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input" id="perm_mgr_${p.id}" ${permissions.manager[p.id] ? 'checked' : ''}>
+                    </td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input" id="perm_stf_${p.id}" ${permissions.staff[p.id] ? 'checked' : ''}>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Users list
+            const userList = document.getElementById('usersListGroup');
+            userList.innerHTML = users.map(u => `
+                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <strong class="d-block">${u.username}</strong>
+                        <small class="text-muted">${u.email} &bull; <span class="badge bg-secondary">${u.role}</span></small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm ${u.is_active ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleUserActive(${u.id})">
+                            ${u.is_active ? 'Disable' : 'Enable'}
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        function savePermissions() {
+            ['dashboard', 'products', 'inventory', 'sales', 'cash_recon', 'reports', 'settings'].forEach(p => {
+                permissions.manager[p] = document.getElementById(`perm_mgr_${p}`).checked ? 1 : 0;
+                permissions.staff[p] = document.getElementById(`perm_stf_${p}`).checked ? 1 : 0;
+            });
+            setStorage('permissions', permissions);
+            showFlash('Page access permissions updated successfully!');
+        }
+
+        function toggleUserActive(id) {
+            const u = users.find(x => x.id === id);
+            if (u) {
+                u.is_active = u.is_active ? 0 : 1;
+                setStorage('users', users);
+                renderSettings();
+                showFlash(`User ${u.username} status updated to: ${u.is_active ? 'Active' : 'Disabled'}`);
+            }
+        }
+
+        function openAddUserModal() {
+            new bootstrap.Modal(document.getElementById('addUserModal')).show();
+        }
+
+        function handleSaveUser(e) {
+            e.preventDefault();
+            const u = {
+                id: Date.now(),
+                username: document.getElementById('newUsername').value.trim(),
+                email: document.getElementById('newEmail').value.trim(),
+                role: document.getElementById('newRole').value,
+                is_active: 1
+            };
+            users.push(u);
+            setStorage('users', users);
+            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            renderSettings();
+            showFlash(`User ${u.username} created.`);
+        }
+
+        // INITIALIZE APP
+        function initApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            navigate('dashboard');
+        }
+
+        // Check persistent login session
+        const sessionUser = sessionStorage.getItem('inv_current_user');
+        if (sessionUser) {
+            initApp();
+        }
+    </script>
+</body>
+</html>
