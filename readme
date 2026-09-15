@@ -1,0 +1,26 @@
+inventory-system/
+├── assets/
+│   ├── css/ <--- This folder contained the bootstrap, bootstrap icon and style.css
+│   ├── img/ <--- This folder contained the image
+│   ├── js/ <--- This folder contained the bootstrap js, app.js and chart.js
+│   └── webfonts/ <--- This folder contained the Font Awesome webfonts
+├── config/
+│   └── database.php <--- working now.
+├── exports/
+│   └── sales_report.php <--- working now.
+├── includes/
+│   ├── auth.php <--- working now.
+│   ├── functions.php <--- This File contained code now
+│   ├── header.php <--- This File contained code now
+│   ├── init.php  <--- working now.
+│   └── sidebar.php <--- working now.
+├── pages/
+│   ├── dashboard.php <--- working now.
+│   ├── inventory.php <--- working now.
+│   ├── products.php <--- working now.
+│   ├── reports.php <--- working now.
+│   ├── sales.php <--- working now.
+│   └── settings.php <--- working now.
+├── vendors/ <--- this have "TCPDF"
+├── index.php <--- working now.
+└── logout.php <--- working now.
