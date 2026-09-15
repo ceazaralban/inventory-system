@@ -16,11 +16,37 @@
     
     <!-- Local Chart.js (for reports and dashboard) -->
     <script src="../assets/js/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
     /* Common CSS for all pages */
     body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f8f9fa;
         overflow-x: hidden;
+    }
+    .metric-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+    .card {
+        border-radius: 10px;
+    }
+    .sidebar .nav-link {
+        color: rgba(255,255,255,0.85);
+        padding: 0.75rem 1.25rem;
+        border-radius: 4px;
+        margin: 2px 8px;
+        transition: all 0.2s;
+    }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+        color: #fff;
+        background: rgba(255,255,255,0.15);
     }
     .sidebar {
         width: 250px;

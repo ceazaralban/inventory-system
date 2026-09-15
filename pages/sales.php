@@ -545,16 +545,20 @@ $top_products = $db->query("
             
             <!-- Main Content -->
             <div class="main-content" id="mainContent">
-                <!-- Header -->
-                <nav class="navbar navbar-light bg-white border-bottom">
-                    <div class="container-fluid">
-                        <button class="btn btn-light sidebar-toggle" id="sidebarToggleNav">
+                <!-- Top Navbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white border-bottom px-4 py-2 sticky-top shadow-sm">
+                    <div class="container-fluid p-0">
+                        <button class="btn btn-outline-secondary d-md-none me-2" id="sidebarToggleNav">
                             <i class="bi bi-list"></i>
                         </button>
-                        <div class="d-flex">
-                            <span class="navbar-text me-3">
-                                Welcome, <?php echo $_SESSION['username']; ?>
+                        <span class="navbar-brand mb-0 h6 text-secondary fw-bold">SALES / POS</span>
+                        <div class="ms-auto d-flex align-items-center gap-3">
+                            <span class="badge bg-light text-dark border px-3 py-2">
+                                <i class="bi bi-person-circle me-1"></i>Welcome, <strong><?php echo htmlspecialchars($_SESSION['username'] ?? 'admin'); ?></strong>
                             </span>
+                            <a href="../logout.php" class="btn btn-sm btn-outline-danger" title="Logout">
+                                <i class="bi bi-power"></i>
+                            </a>
                         </div>
                     </div>
                 </nav>
