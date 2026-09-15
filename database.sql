@@ -39,12 +39,14 @@ INSERT INTO `page_permissions` (`page_key`, `role`, `is_enabled`) VALUES
 ('products', 'manager', 1),
 ('inventory', 'manager', 1),
 ('sales', 'manager', 1),
+('cash_reconciliation', 'manager', 1),
 ('reports', 'manager', 1),
 ('settings', 'manager', 0),
 ('dashboard', 'staff', 1),
 ('products', 'staff', 0),
 ('inventory', 'staff', 1),
 ('sales', 'staff', 1),
+('cash_reconciliation', 'staff', 1),
 ('reports', 'staff', 0),
 ('settings', 'staff', 0)
 ON DUPLICATE KEY UPDATE `is_enabled` = VALUES(`is_enabled`);
@@ -71,6 +73,15 @@ CREATE TABLE IF NOT EXISTS `products` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5 Sample Products for testing all functions
+INSERT INTO `products` (`sku`, `name`, `description`, `category`, `unit_type`, `weight_per_piece`, `min_weight`, `cost_price`, `sale_price`, `wholesale_price`, `last_purchase_cost`, `stock_qty`, `location`, `reorder_level`) VALUES
+('SKU-RICE001', 'Jasmine Rice 25kg Sack', 'Premium quality jasmine white rice 25kg', 'Grains', 'piece', 1.000, 0.100, 1000.00, 1250.00, 1150.00, 1000.00, 20.000, 'Warehouse A', 5.00),
+('SKU-PORK002', 'Fresh Pork Belly', 'Fresh cut pork belly sold per kg', 'Meat', 'kg', 1.000, 0.250, 280.00, 360.00, 320.00, 280.00, 50.500, 'Cold Storage 1', 10.00),
+('SKU-OIL003', 'Cooking Oil 1L Bottle', 'Pure vegetable cooking oil 1 Liter', 'Groceries', 'piece', 1.000, 0.100, 65.00, 85.00, 75.00, 65.00, 40.000, 'Shelf B-2', 10.00),
+('SKU-CHIK004', 'Fresh Whole Chicken', 'Dressed fresh whole chicken sold per kg', 'Poultry', 'kg', 1.200, 0.500, 160.00, 210.00, 190.00, 160.00, 35.000, 'Cold Storage 2', 8.00),
+('SKU-SUG005', 'Refined White Sugar 1kg', 'Pure refined cane white sugar 1kg pack', 'Groceries', 'piece', 1.000, 0.100, 70.00, 90.00, 82.00, 70.00, 4.000, 'Shelf A-1', 10.00)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 -- --------------------------------------------------------
 -- Table structure for `purchases`
@@ -111,6 +122,37 @@ CREATE TABLE IF NOT EXISTS `sales` (
   INDEX `idx_sale_product` (`product_id`),
   INDEX `idx_receipt_no` (`receipt_no`),
   INDEX `idx_sale_date` (`sale_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for `cash_reconciliations`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `cash_reconciliations` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `recon_date` DATE NOT NULL UNIQUE,
+  `expected_cash` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `counted_cash` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `difference` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `notes` TEXT NULL,
+  `updated_by` VARCHAR(100) NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for `cash_reconciliation_logs`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `cash_reconciliation_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `recon_date` DATE NOT NULL,
+  `expected_cash` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `counted_cash` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `difference` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `notes` TEXT NULL,
+  `action_type` VARCHAR(50) NOT NULL DEFAULT 'save',
+  `created_by` VARCHAR(100) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_recon_date` (`recon_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/init.php';
 redirectIfNotLoggedIn();
+requirePageAccess('cash_reconciliation');
 
 $database = new Database();
 $db = $database->getConnection();
@@ -42,28 +43,52 @@ if ($_POST) {
     $expected_cash = (float)($_POST['expected_cash'] ?? 0);
     $diff = $counted_cash - $expected_cash;
 
-// Insert log entry every time (history)
-$action_type = $existing ? 'update' : 'save';
+    // Upsert into cash_reconciliations
+    $save_recon = $db->prepare("
+        INSERT INTO cash_reconciliations (recon_date, expected_cash, counted_cash, difference, notes, updated_by, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE
+            expected_cash = VALUES(expected_cash),
+            counted_cash = VALUES(counted_cash),
+            difference = VALUES(difference),
+            notes = VALUES(notes),
+            updated_by = VALUES(updated_by),
+            updated_at = NOW()
+    ");
+    $save_recon->execute([
+        $selected_date,
+        $expected_cash,
+        $counted_cash,
+        $diff,
+        $notes,
+        $_SESSION['username'] ?? 'system'
+    ]);
 
-$log = $db->prepare("
-    INSERT INTO cash_reconciliation_logs
-    (recon_date, expected_cash, counted_cash, difference, notes, action_type, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-");
-$log->execute([
-    $selected_date,
-    $expected_cash,
-    $counted_cash,
-    $diff,
-    $notes,
-    $action_type,
-    $_SESSION['username']
-]);
+    // Insert log entry every time (history)
+    $action_type = $existing ? 'update' : 'save';
 
-    // Refresh
+    $log = $db->prepare("
+        INSERT INTO cash_reconciliation_logs
+        (recon_date, expected_cash, counted_cash, difference, notes, action_type, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $log->execute([
+        $selected_date,
+        $expected_cash,
+        $counted_cash,
+        $diff,
+        $notes,
+        $action_type,
+        $_SESSION['username'] ?? 'system'
+    ]);
+
+    $_SESSION['flash_success'] = "Cash reconciliation saved successfully!";
     header("Location: cash_reconciliation.php?date=" . urlencode($selected_date));
     exit;
 }
+
+$success = $_SESSION['flash_success'] ?? '';
+unset($_SESSION['flash_success']);
 
 include '../includes/header.php';
 ?>
@@ -86,10 +111,15 @@ include '../includes/header.php';
       <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2>Cash Count Reconciliation</h2>
-          <form method="GET" class="d-flex gap-2">
-            <input type="date" name="date" value="<?php echo htmlspecialchars($selected_date); ?>" class="form-control">
-            <button class="btn btn-primary">Load</button>
-          </form>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+              <i class="bi bi-printer me-1"></i>Print Summary
+            </button>
+            <form method="GET" class="d-flex gap-2 mb-0">
+              <input type="date" name="date" value="<?php echo htmlspecialchars($selected_date); ?>" class="form-control">
+              <button class="btn btn-primary">Load</button>
+            </form>
+          </div>
         </div>
 
         <?php if (!empty($success)): ?>

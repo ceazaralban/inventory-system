@@ -22,7 +22,7 @@ if ($_POST) {
             die('Access denied');
         }
 
-        $pages = ['dashboard','products','inventory','sales','reports','settings'];
+        $pages = ['dashboard','products','inventory','sales','cash_reconciliation','reports','settings'];
 
         // checkboxes arrays (if unchecked, it won’t exist)
         $allow_manager = $_POST['allow_manager'] ?? [];
@@ -241,14 +241,15 @@ $stats_query = "
         (SELECT SUM(total) FROM sales WHERE DATE(sale_date) = CURDATE()) as today_revenue
 ";
 $stats = $db->query($stats_query)->fetch(PDO::FETCH_ASSOC);
-$page_keys = ['dashboard','products','inventory','sales','reports','settings'];
+$page_keys = ['dashboard','products','inventory','sales','cash_reconciliation','reports','settings'];
 $page_labels = [
-    'dashboard' => 'Dashboard',
-    'products'  => 'Products',
-    'inventory' => 'Inventory',
-    'sales'     => 'Sales',
-    'reports'   => 'Reports',
-    'settings'  => 'Settings',
+    'dashboard'           => 'Dashboard',
+    'products'            => 'Products',
+    'inventory'           => 'Inventory',
+    'sales'               => 'Sales',
+    'cash_reconciliation' => 'Cash Reconciliation',
+    'reports'             => 'Reports',
+    'settings'            => 'Settings',
 ];
 
 // defaults allow

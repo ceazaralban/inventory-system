@@ -206,6 +206,9 @@ if ($report_type === 'sales' && !empty($report_data)) {
                             <div class="d-flex justify-content-between align-items-center">
                                 <h2>Reports & Analytics</h2>
                                 <div>
+                                    <button type="button" class="btn btn-outline-secondary me-2" onclick="window.print()">
+                                        <i class="bi bi-printer me-1"></i>Print Summary
+                                    </button>
                                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
                                         <i class="bi bi-download me-1"></i>Export Report
                                     </button>

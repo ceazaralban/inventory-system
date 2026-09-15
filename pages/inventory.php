@@ -117,10 +117,10 @@ $purchases = $db->query("
 $inventory_summary = $db->query("
     SELECT 
         COUNT(*) as total_products,
-        SUM(stock_qty) as total_items,
-        SUM(stock_qty * cost_price) as total_cost_value,
-        SUM(stock_qty * sale_price) as total_retail_value,
-        SUM(CASE WHEN stock_qty <= reorder_level THEN 1 ELSE 0 END) as low_stock_count
+        COALESCE(SUM(stock_qty), 0) as total_items,
+        COALESCE(SUM(stock_qty * cost_price), 0) as total_cost_value,
+        COALESCE(SUM(stock_qty * sale_price), 0) as total_retail_value,
+        COALESCE(SUM(CASE WHEN stock_qty <= reorder_level THEN 1 ELSE 0 END), 0) as low_stock_count
     FROM products
 ")->fetch(PDO::FETCH_ASSOC);
 ?>
@@ -195,7 +195,7 @@ $inventory_summary = $db->query("
                         <div class="col-md-2">
                             <div class="card metric-card bg-success text-white">
                                 <div class="card-body text-center">
-                                    <h3 class="card-text"><?php echo number_format($inventory_summary['total_items']); ?></h3>
+                                    <h3 class="card-text"><?php echo number_format((float)($inventory_summary['total_items'] ?? 0)); ?></h3>
                                     <small>Total Items</small>
                                 </div>
                             </div>
@@ -203,7 +203,7 @@ $inventory_summary = $db->query("
                         <div class="col-md-2">
                             <div class="card metric-card bg-info text-white">
                                 <div class="card-body text-center">
-                                    <h3 class="card-text"><?php echo '₱' . number_format($inventory_summary['total_cost_value'], 2); ?></h3>
+                                    <h3 class="card-text"><?php echo '₱' . number_format((float)($inventory_summary['total_cost_value'] ?? 0), 2); ?></h3>
                                     <small>Cost Value</small>
                                 </div>
                             </div>
@@ -211,7 +211,7 @@ $inventory_summary = $db->query("
                         <div class="col-md-2">
                             <div class="card metric-card bg-warning text-white">
                                 <div class="card-body text-center">
-                                    <h3 class="card-text"><?php echo '₱' . number_format($inventory_summary['total_retail_value'], 2); ?></h3>
+                                    <h3 class="card-text"><?php echo '₱' . number_format((float)($inventory_summary['total_retail_value'] ?? 0), 2); ?></h3>
                                     <small>Retail Value</small>
                                 </div>
                             </div>

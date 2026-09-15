@@ -151,6 +151,22 @@
     .table-actions {
         white-space: nowrap;
     }
+
+    @media print {
+        .sidebar, .navbar, .btn, .table-actions, .sidebar-overlay, .modal, .sidebar-toggle {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 0 !important;
+        }
+        .card {
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+            break-inside: avoid;
+        }
+    }
     </style>
 </head>
 <body>
