@@ -42,7 +42,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link text-white <?php echo $current_page == 'sales.php' ? 'active' : ''; ?>" href="sales.php">
                     <i class="bi bi-cart me-2"></i>
-                    <span>Sales</span>
+                    <span>Sales / POS</span>
                 </a>
             </li>
             <?php endif; ?>
