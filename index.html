@@ -125,10 +125,10 @@
                     <button class="btn btn-outline-secondary d-md-none me-2" onclick="toggleSidebar()">
                         <i class="bi bi-list"></i>
                     </button>
-                    <span class="navbar-brand mb-0 h6 text-secondary" id="pageHeaderTitle">Dashboard</span>
+                    <span class="navbar-brand mb-0 h6 text-secondary fw-bold" id="pageHeaderTitle">DASHBOARD</span>
                     <div class="ms-auto d-flex align-items-center gap-3">
-                        <span class="badge bg-light text-dark border"><i class="bi bi-person-circle me-1"></i>Welcome, <strong id="currentUserBadge">admin</strong></span>
-                        <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="bi bi-power"></i></button>
+                        <span class="badge bg-light text-dark border px-3 py-2"><i class="bi bi-person-circle me-1"></i>Welcome, <strong id="currentUserBadge">admin</strong></span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()" title="Logout"><i class="bi bi-power"></i></button>
                     </div>
                 </div>
             </nav>
@@ -742,22 +742,31 @@
         // INITIAL SAMPLE DATA
         const INITIAL_PRODUCTS = [
             { id: 1, sku: 'SKU-RICE001', name: 'Jasmine Rice 25kg Sack', category: 'Grains', unit_type: 'piece', cost_price: 1000.00, sale_price: 1250.00, wholesale_price: 1150.00, stock_qty: 20.00, reorder_level: 5 },
-            { id: 2, sku: 'SKU-PORK002', name: 'Fresh Pork Belly', category: 'Meat', unit_type: 'kg', cost_price: 280.00, sale_price: 360.00, wholesale_price: 320.00, stock_qty: 50.50, reorder_level: 10 },
-            { id: 3, sku: 'SKU-OIL003', name: 'Cooking Oil 1L Bottle', category: 'Groceries', unit_type: 'piece', cost_price: 65.00, sale_price: 85.00, wholesale_price: 75.00, stock_qty: 40.00, reorder_level: 10 },
-            { id: 4, sku: 'SKU-CHIK004', name: 'Fresh Whole Chicken', category: 'Poultry', unit_type: 'kg', cost_price: 160.00, sale_price: 210.00, wholesale_price: 190.00, stock_qty: 35.00, reorder_level: 8 },
+            { id: 2, sku: 'SKU-PORK002', name: 'Fresh Pork Belly', category: 'Meat', unit_type: 'kg', cost_price: 290.00, sale_price: 360.00, wholesale_price: 320.00, stock_qty: 50.50, reorder_level: 10 },
+            { id: 3, sku: 'SKU-OIL003', name: 'Cooking Oil 1L Bottle', category: 'Groceries', unit_type: 'piece', cost_price: 65.00, sale_price: 85.00, wholesale_price: 75.00, stock_qty: 35.00, reorder_level: 10 },
+            { id: 4, sku: 'SKU-CHIK004', name: 'Fresh Whole Chicken', category: 'Poultry', unit_type: 'kg', cost_price: 160.00, sale_price: 210.00, wholesale_price: 190.00, stock_qty: 33.80, reorder_level: 8 },
             { id: 5, sku: 'SKU-SUG005', name: 'Refined White Sugar 1kg', category: 'Groceries', unit_type: 'piece', cost_price: 70.00, sale_price: 90.00, wholesale_price: 82.00, stock_qty: 4.00, reorder_level: 10 }
         ];
 
         const INITIAL_USERS = [
             { id: 1, username: 'admin', email: 'admin@example.com', role: 'admin', is_active: 1 },
-            { id: 2, username: 'manager1', email: 'manager@example.com', role: 'manager', is_active: 1 },
-            { id: 3, username: 'cashier1', email: 'staff@example.com', role: 'staff', is_active: 1 }
+            { id: 2, username: 'staffmember', email: 'staffmember@example.com', role: 'staff', is_active: 1 },
+            { id: 3, username: 'manager101', email: 'manager101@example.com', role: 'manager', is_active: 1 }
         ];
 
         const INITIAL_PERMISSIONS = {
             manager: { dashboard: 1, products: 1, inventory: 1, sales: 1, cash_recon: 1, reports: 1, settings: 0 },
             staff: { dashboard: 1, products: 0, inventory: 1, sales: 1, cash_recon: 1, reports: 0, settings: 0 }
         };
+
+        // CACHE REFRESH CHECK
+        if (localStorage.getItem('inv_sys_version') !== '2.1') {
+            localStorage.removeItem('inv_sys_products');
+            localStorage.removeItem('inv_sys_sales');
+            localStorage.removeItem('inv_sys_purchases');
+            localStorage.removeItem('inv_sys_users');
+            localStorage.setItem('inv_sys_version', '2.1');
+        }
 
         // LOAD FROM LOCAL STORAGE OR INITIALIZE
         function getStorage(key, fallback) {
@@ -771,10 +780,11 @@
         let products = getStorage('products', INITIAL_PRODUCTS);
         let purchases = getStorage('purchases', [
             { date: '2026-09-15 08:30', product_id: 1, product_name: 'Jasmine Rice 25kg Sack', qty: 20, cost: 1000.00, supplier: 'Rice Mills Ltd', notes: 'Initial inventory shipment' },
-            { date: '2026-09-15 08:45', product_id: 2, product_name: 'Fresh Pork Belly', qty: 50.5, cost: 280.00, supplier: 'Local Farm', notes: 'Fresh delivery' }
+            { date: '2026-09-15 08:45', product_id: 2, product_name: 'Fresh Pork Belly', qty: 50.5, cost: 290.00, supplier: 'Local Farm', notes: 'Fresh delivery' }
         ]);
         let sales = getStorage('sales', [
-            { id: 1, receipt_no: 'R-20260915-001', date: '2026-09-15 09:30', product_id: 3, product_name: 'Cooking Oil 1L Bottle', qty: 2, price: 85.00, total: 170.00, paid: 200.00, change: 30.00, customer: 'Walk-in', is_void: 0 }
+            { id: 1, receipt_no: 'R-20260915113129-F7203C', date: '2026-09-15 11:18', product_id: 3, product_name: 'Cooking Oil 1L Bottle', qty: 5, price: 85.00, total: 425.00, paid: 1000.00, change: 323.00, customer: 'Norman', is_void: 0 },
+            { id: 2, receipt_no: 'R-20260915113129-F7203C', date: '2026-09-15 11:18', product_id: 4, product_name: 'Fresh Whole Chicken', qty: 1.2, price: 210.00, total: 252.00, paid: 1000.00, change: 323.00, customer: 'Norman', is_void: 0 }
         ]);
         let reconLogs = getStorage('recon_logs', []);
         let users = getStorage('users', INITIAL_USERS);
@@ -789,6 +799,7 @@
             const p = document.getElementById('loginPassword').value.trim();
             const user = users.find(x => x.username === u && x.is_active === 1);
             if (user && p === 'admin12345') {
+                sessionStorage.removeItem('inv_logged_out');
                 sessionStorage.setItem('inv_current_user', JSON.stringify(user));
                 initApp();
             } else {
@@ -799,6 +810,7 @@
         }
 
         function handleLogout() {
+            sessionStorage.setItem('inv_logged_out', '1');
             sessionStorage.removeItem('inv_current_user');
             document.getElementById('appScreen').style.display = 'none';
             document.getElementById('loginScreen').style.display = 'flex';
@@ -819,7 +831,16 @@
             const activeLink = document.querySelector(`.sidebar .nav-link[onclick="navigate('${viewName}')"]`);
             if (activeLink) activeLink.classList.add('active');
 
-            document.getElementById('pageHeaderTitle').textContent = viewName.toUpperCase().replace('_', ' ');
+            const titleMap = {
+                dashboard: 'DASHBOARD',
+                products: 'PRODUCTS',
+                inventory: 'INVENTORY',
+                sales: 'SALES / POS',
+                cash_recon: 'CASH RECONCILIATION',
+                reports: 'REPORTS & ANALYTICS',
+                settings: 'SYSTEM SETTINGS'
+            };
+            document.getElementById('pageHeaderTitle').textContent = titleMap[viewName] || viewName.toUpperCase().replace('_', ' ');
 
             if (window.innerWidth < 768) {
                 document.getElementById('sidebar').classList.remove('show');
@@ -1431,9 +1452,13 @@
             navigate('dashboard');
         }
 
-        // Check persistent login session
+        // Check persistent login session or enter live preview directly
+        const loggedOut = sessionStorage.getItem('inv_logged_out');
         const sessionUser = sessionStorage.getItem('inv_current_user');
         if (sessionUser) {
+            initApp();
+        } else if (!loggedOut) {
+            sessionStorage.setItem('inv_current_user', JSON.stringify(users[0]));
             initApp();
         }
     </script>
